@@ -20,6 +20,7 @@ namespace BrockAllen.MembershipReboot.Test.AccountService
     public class UserAccountServiceTests
     {
         CaptureLatestEvent<AccountUnlockedEvent<UserAccount>, UserAccount> accountUnlockedEvent;
+        CaptureLatestEvent<AccountCreatedEvent<UserAccount>, UserAccount> accountCreatedEvent;
         TestUserAccountService subject;
         FakeUserAccountRepository repository;
         MembershipRebootConfiguration configuration;
@@ -42,6 +43,8 @@ namespace BrockAllen.MembershipReboot.Test.AccountService
             configuration.AddEventHandler(key);
             accountUnlockedEvent = CaptureLatestEvent.For<AccountUnlockedEvent<UserAccount>>();
             configuration.AddEventHandler(accountUnlockedEvent);
+            accountCreatedEvent = CaptureLatestEvent.For<AccountCreatedEvent<UserAccount>>();
+            configuration.AddEventHandler(accountCreatedEvent);
 
             repository = new FakeUserAccountRepository();
             subject = new TestUserAccountService(configuration, repository);
@@ -339,6 +342,24 @@ namespace BrockAllen.MembershipReboot.Test.AccountService
             catch (ValidationException ex)
             {
                 Assert.AreEqual(Resources.ValidationMessages.EmailAlreadyInUse, ex.Message);
+            }
+        }
+
+        [TestMethod]
+        public void CreateAccount_EmailIsUsername_DuplicateEmails_FailsValidation_Does_Not_Publish_Event()
+        {
+            configuration.EmailIsUsername = true;
+            subject.CreateAccount(null, "pass", "test@test.com");
+
+            try
+            {
+                subject.CreateAccount(null, "pass2", "test@test.com");
+                Assert.Fail();
+            }
+            catch (ValidationException ex)
+            {
+                Assert.AreEqual(Resources.ValidationMessages.EmailAlreadyInUse, ex.Message);
+                Assert.IsNull(accountCreatedEvent);
             }
         }
 
