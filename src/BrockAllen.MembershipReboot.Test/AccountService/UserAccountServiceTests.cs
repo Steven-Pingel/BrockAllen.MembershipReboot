@@ -358,8 +358,9 @@ namespace BrockAllen.MembershipReboot.Test.AccountService
             }
             catch (ValidationException ex)
             {
+                subject.CreateAccount(null, "pass2", "testvalid@test.com");
                 Assert.AreEqual(Resources.ValidationMessages.EmailAlreadyInUse, ex.Message);
-                Assert.IsNull(accountCreatedEvent);
+                Assert.AreEqual(accountCreatedEvent.Latest.InitialPassword, "pass2");
             }
         }
 
